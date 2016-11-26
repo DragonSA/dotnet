@@ -3,4 +3,5 @@
 %%DOTNETDIR_SHARE%%/System.Native.so
 %%DOTNETDIR_SHARE%%/System.Net.Http.Native.so
 %%DOTNETDIR_SHARE%%/System.Net.Security.Native.so
+%%DOTNETDIR_SHARE%%/System.Security.Cryptography.Native.OpenSsl.so
 %%DOTNETDIR_SHARE%%/System.Security.Cryptography.Native.so

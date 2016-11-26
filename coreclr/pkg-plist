@@ -29,4 +29,9 @@
 %%DOTNETDIR_SHARE%%/libmscordbi.so
 %%DOTNETDIR_SHARE%%/libsos.so
 %%DOTNETDIR_SHARE%%/libsosplugin.so
+%%DOTNETDIR_SHARE%%/libsuperpmi-shim-collector.so
+%%DOTNETDIR_SHARE%%/libsuperpmi-shim-counter.so
+%%DOTNETDIR_SHARE%%/libsuperpmi-shim-simple.so
+%%DOTNETDIR_SHARE%%/mcs
 %%DOTNETDIR_SHARE%%/sosdocsunix.txt
+%%DOTNETDIR_SHARE%%/superpmi
