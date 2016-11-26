@@ -2,7 +2,7 @@
 # $FreeBSD$
 
 PORTNAME=	coreclr
-PORTVERSION=	1.1.0
+PORTVERSION=	1.0.4
 CATEGORIES=	lang
 DISTVERSIONPREFIX=	v
 
@@ -15,7 +15,8 @@ LICENSE_FILE=	${WRKSRC}/LICENSE.TXT
 BUILD_DEPENDS=	clang${LLVM_VERSION:S/.//}:lang/clang${LLVM_VERSION:S/.//} \
 		bash:shells/bash
 LIB_DEPENDS=	libunwind.so.8:devel/libunwind \
-		libicuuc.so:devel/icu
+		libicuuc.so:devel/icu \
+		liblldb.so.${LLVM_VERSION}:devel/llvm${LLVM_VERSION:S/.//}
 
 ONLY_FOR_ARCHS=	i386 amd64 armv6
 
@@ -29,17 +30,19 @@ SHEBANG_FILES=	${WRKSRC}/build.sh \
 		${WRKSRC}/src/pal/tests/palsuite/runpaltests.sh
 
 BUILD_WRKSRC=	${BUILDDIR}
-CMAKE_ARGS=	-DHAVE_PROCFS_CTL=0 -DCMAKE_INSTALL_PREFIX=${PREFIX}/${BOOTSTRAPDIR_SHARE}
+CONFIGURE_ENV=	BUILDDIR=${BUILDDIR} LLVM_HOME=${LOCALBASE}/llvm${LLVM_VERSION:S/.//}
+CMAKE_ARGS=	-DHAVE_PROCFS_CTL=0 -DCMAKE_INSTALL_PREFIX=${PREFIX}/${DOTNETDIR_SHARE} \
+		-DWITH_LLDB_LIBS=${LOCALBASE}/llvm${LLVM_VERSION:S/.//}/lib \
+		-DWITH_LLDB_INCLUDES=${LOCALBASE}/llvm${LLVM_VERSION:S/.//}/include
 INSTALL_TARGET=	install/strip
 INSTALL_WRKSRC=	${BUILDDIR}
-MAKE_ENV=	BUILDDIR=${BUILDDIR} LLVM_HOME=${LOCALBASE}/llvm${LLVM_VERSION:S/.//}
-PLIST_SUB=	BOOTSTRAPDIR=${BOOTSTRAPDIR} \
-		BOOTSTRAPDIR_SHARE=${BOOTSTRAPDIR_SHARE}
+PLIST_SUB=	DOTNETDIR=${DOTNETDIR} \
+		DOTNETDIR_SHARE=${DOTNETDIR_SHARE}
 
 BUILDDIR=	${WRKDIR}/.build
-BOOTSTRAPDIR=	dotnet/dotnetcli
-BOOTSTRAPDIR_SHARE=	${BOOTSTRAPDIR}/shared/Microsoft.NETCore.App/1.0.1
-BUILD_TOOLS_PACKAGE_VERSION=	1.0.26-prerelease-00719-02
+DOTNETDIR=	dotnet/bootstrap
+DOTNETDIR_SHARE=${DOTNETDIR}/shared/Microsoft.NETCore.App/1.0.1
+BUILD_TOOLS_PACKAGE_VERSION=	1.0.25-prerelease-00510-02  # ${WRKSRC}/BuildToolsVersion.txt
 LLVM_VERSION=	3.7
 
 post-extract:
@@ -52,7 +55,7 @@ post-patch:
 			${WRKSRC}/src/pal/tools/gen-buildsys-clang.sh
 
 do-configure:
-	${SETENV} ${CONFIGURE_ENV} ${MAKE_ENV} ${WRKSRC}/build.sh debug clang${LLVM_VERSION} configureonly cmakeargs "${CMAKE_ARGS}"
+	${SETENV} ${CONFIGURE_ENV} ${WRKSRC}/build.sh release clang${LLVM_VERSION} configureonly cmakeargs "${CMAKE_ARGS}"
 
 post-install:
 	${FIND} ${STAGEDIR}${PREFIX}/${BOOTSTRAPDIR_SHARE} -name '*.dbg' -delete

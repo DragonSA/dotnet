@@ -1,0 +1,728 @@
+commit cf0c28faec35090781799df0a2360cf2440d05ce
+Author: Jan Vorlicek <janvorli@microsoft.com>
+Date:   Wed Oct 26 11:46:24 2016 +0200
+
+    Remove dependency of System.Globalization.Native.so on specific ICU version (#7773)
+    
+    Remove dependency of System.Globalization.Native.so on specific ICU version
+
+diff --git src/corefx/System.Globalization.Native/CMakeLists.txt src/corefx/System.Globalization.Native/CMakeLists.txt
+index 3d9e392..5892856 100644
+--- src/corefx/System.Globalization.Native/CMakeLists.txt
++++ src/corefx/System.Globalization.Native/CMakeLists.txt
+@@ -14,7 +14,7 @@ if(UTYPES_H STREQUAL UTYPES_H-NOTFOUND)
+     return()
+ endif()
+ 
+-if(NOT CLR_CMAKE_PLATFORM_DARWIN)
++if (FEATURE_FIXED_ICU_VERSION AND NOT CLR_CMAKE_PLATFORM_DARWIN)
+     find_library(ICUUC icuuc)
+     if(ICUUC STREQUAL ICUUC-NOTFOUND)
+         message(FATAL_ERROR "Cannot find libicuuc, try installing libicu-dev (or the appropriate package for your platform)")
+@@ -26,12 +26,16 @@ if(NOT CLR_CMAKE_PLATFORM_DARWIN)
+         message(FATAL_ERROR "Cannot find libicui18n, try installing libicu-dev (or the appropriate package for your platform)")
+         return()
+     endif()
+-else()
++endif()
++
++if(CLR_CMAKE_PLATFORM_DARWIN)
+     find_library(ICUCORE icucore)
+     if(ICUI18N STREQUAL ICUCORE-NOTFOUND)
+         message(FATAL_ERROR "Cannot find libicucore, skipping build for System.Globalization.Native. .NET globalization is not expected to function.")
+         return()
+     endif()
++    # On Darwin, we always use the OS provided ICU
++    SET(FEATURE_FIXED_ICU_VERSION 1)
+ endif()
+ 
+ include(configure.cmake)
+@@ -50,6 +54,12 @@ set(NATIVEGLOBALIZATION_SOURCES
+     timeZoneInfo.cpp
+ )
+ 
++if (NOT FEATURE_FIXED_ICU_VERSION)
++    list(APPEND NATIVEGLOBALIZATION_SOURCES
++        icushim.cpp
++    )
++endif()
++
+ include_directories(${UTYPES_H})
+ 
+ _add_library(System.Globalization.Native
+@@ -60,11 +70,21 @@ _add_library(System.Globalization.Native
+ # Disable the "lib" prefix.
+ set_target_properties(System.Globalization.Native PROPERTIES PREFIX "")
+ 
++if (FEATURE_FIXED_ICU_VERSION)
++    add_definitions(-DFEATURE_FIXED_ICU_VERSION)
++endif()
++
+ if(NOT CLR_CMAKE_PLATFORM_DARWIN)
+-    target_link_libraries(System.Globalization.Native
+-        ${ICUUC}
+-        ${ICUI18N}
+-    )
++    if (FEATURE_FIXED_ICU_VERSION)
++        target_link_libraries(System.Globalization.Native
++            ${ICUUC}
++            ${ICUI18N}
++        )
++    elseif(NOT CMAKE_SYSTEM_NAME STREQUAL FreeBSD AND NOT CMAKE_SYSTEM_NAME STREQUAL NetBSD)
++        target_link_libraries(System.Globalization.Native
++            dl
++        )
++    endif()
+ else()
+     target_link_libraries(System.Globalization.Native
+         ${ICUCORE}
+@@ -74,4 +94,4 @@ else()
+ endif()
+ 
+ # add the install targets
+-install_clr(System.Globalization.Native)
+\ No newline at end of file
++install_clr(System.Globalization.Native)
+diff --git src/corefx/System.Globalization.Native/calendarData.cpp src/corefx/System.Globalization.Native/calendarData.cpp
+index f91cc0c..4943607 100644
+--- src/corefx/System.Globalization.Native/calendarData.cpp
++++ src/corefx/System.Globalization.Native/calendarData.cpp
+@@ -6,7 +6,7 @@
+ #include <string.h>
+ #include <vector>
+ 
+-#include "config.h"
++#include "icushim.h"
+ #include "locale.hpp"
+ #include "holders.h"
+ #include "errors.h"
+diff --git src/corefx/System.Globalization.Native/casing.cpp src/corefx/System.Globalization.Native/casing.cpp
+index 58b47fc..918b8fe 100644
+--- src/corefx/System.Globalization.Native/casing.cpp
++++ src/corefx/System.Globalization.Native/casing.cpp
+@@ -5,8 +5,7 @@
+ 
+ #include <assert.h>
+ #include <stdint.h>
+-#include <unicode/uchar.h>
+-#include <unicode/utf16.h>
++#include "icushim.h"
+ 
+ /*
+ Function:
+diff --git src/corefx/System.Globalization.Native/collation.cpp src/corefx/System.Globalization.Native/collation.cpp
+index 42a9674..4a6fafd 100644
+--- src/corefx/System.Globalization.Native/collation.cpp
++++ src/corefx/System.Globalization.Native/collation.cpp
+@@ -8,12 +8,8 @@
+ #include <stdint.h>
+ #include <vector>
+ #include <map>
+-#include <unicode/uchar.h>
+-#include <unicode/ucol.h>
+-#include <unicode/usearch.h>
+-#include <unicode/utf16.h>
+ 
+-#include "config.h"
++#include "icushim.h"
+ 
+ const int32_t CompareOptionsIgnoreCase = 0x1;
+ const int32_t CompareOptionsIgnoreNonSpace = 0x2;
+diff --git src/corefx/System.Globalization.Native/errors.h src/corefx/System.Globalization.Native/errors.h
+index 2bfbdb2..031ea7b 100644
+--- src/corefx/System.Globalization.Native/errors.h
++++ src/corefx/System.Globalization.Native/errors.h
+@@ -4,8 +4,6 @@
+ 
+ #pragma once
+ 
+-#include <unicode/utypes.h>
+-
+ /*
+ * These values should be kept in sync with
+ * Interop.GlobalizationInterop.ResultCode
+diff --git src/corefx/System.Globalization.Native/holders.h src/corefx/System.Globalization.Native/holders.h
+index 529451f..83e253d 100644
+--- src/corefx/System.Globalization.Native/holders.h
++++ src/corefx/System.Globalization.Native/holders.h
+@@ -2,14 +2,6 @@
+ // The .NET Foundation licenses this file to you under the MIT license.
+ // See the LICENSE file in the project root for more information.
+ 
+-#include <unicode/ucal.h>
+-#include <unicode/uenum.h>
+-#include <unicode/udatpg.h>
+-#include <unicode/udat.h>
+-#include <unicode/unum.h>
+-#include <unicode/uldnames.h>
+-#include <unicode/ures.h>
+-
+ // IcuHolder is a template that can manage the lifetime of a raw pointer to ensure that it is cleaned up at the correct
+ // time.  The general usage pattern is to aquire some ICU resource via an _open call, then construct a holder using the
+ // pointer and UErrorCode to manage the lifetime.  When the holder goes out of scope, the coresponding close method is
+diff --git src/corefx/System.Globalization.Native/icushim.cpp src/corefx/System.Globalization.Native/icushim.cpp
+new file mode 100644
+index 0000000..63f111b
+--- /dev/null
++++ src/corefx/System.Globalization.Native/icushim.cpp
+@@ -0,0 +1,226 @@
++// Licensed to the .NET Foundation under one or more agreements.
++// The .NET Foundation licenses this file to you under the MIT license.
++// See the LICENSE file in the project root for more information.
++//
++
++#include <dlfcn.h>
++#include <stdlib.h>
++#include <stdio.h>
++#include <string.h>
++#include <assert.h>
++
++#include "icushim.h"
++
++// Define pointers to all the used ICU functions
++#define PER_FUNCTION_BLOCK(fn, lib) decltype(fn)* fn##_ptr;
++FOR_ALL_ICU_FUNCTIONS
++#undef PER_FUNCTION_BLOCK
++
++static void* libicuuc = nullptr;
++static void* libicui18n = nullptr;
++
++// Version ranges to search for each of the three version components
++// The rationale for major version range is that we support versions higher or
++// equal to the version we are built against and less or equal to that version
++// plus 20 to give us enough headspace. The ICU seems to version about twice
++// a year.
++static const int MinICUVersion = U_ICU_VERSION_MAJOR_NUM;
++static const int MaxICUVersion = MinICUVersion + 20;
++static const int MinMinorICUVersion = 1;
++static const int MaxMinorICUVersion = 5;
++static const int MinSubICUVersion = 1;
++static const int MaxSubICUVersion = 5;
++
++// .x.x.x, considering the max number of decimal digits for each component
++static const int MaxICUVersionStringLength = 33;
++
++// Get filename of an ICU library with the requested version in the name
++// There are three possible cases of the version components values:
++// 1. Only majorVer is not equal to -1 => result is baseFileName.majorver
++// 2. Only majorVer and minorVer are not equal to -1 => result is baseFileName.majorver.minorVer
++// 3. All components are not equal to -1 => result is baseFileName.majorver.minorVer.subver
++void GetVersionedLibFileName(const char* baseFileName, int majorVer, int minorVer, int subVer, char* result)
++{
++    assert(majorVer != -1);
++
++    int nameLen = sprintf(result, "%s.%d", baseFileName, majorVer);
++
++    if (minorVer != -1)
++    {
++        nameLen += sprintf(result + nameLen, ".%d", minorVer);
++        if (subVer != -1)
++        {
++            sprintf(result + nameLen, ".%d", subVer);
++        }    
++    }
++}
++
++// Try to open the necessary ICU libraries
++bool OpenICULibraries(int majorVer, int minorVer, int subVer)
++{
++    char libicuucName[64];
++    char libicui18nName[64];
++
++    static_assert(sizeof("libicuuc.so") + MaxICUVersionStringLength <= sizeof(libicuucName), "The libicuucName is too small");
++    GetVersionedLibFileName("libicuuc.so", majorVer, minorVer, subVer, libicuucName);
++
++    static_assert(sizeof("libicui18n.so") + MaxICUVersionStringLength <= sizeof(libicui18nName), "The libicui18nName is too small");
++    GetVersionedLibFileName("libicui18n.so", majorVer, minorVer, subVer, libicui18nName);
++
++    libicuuc = dlopen(libicuucName, RTLD_LAZY);
++    if (libicuuc != nullptr)
++    {
++        libicui18n = dlopen(libicui18nName, RTLD_LAZY);
++        if (libicui18n == nullptr)
++        {
++            dlclose(libicuuc);
++            libicuuc = nullptr;
++        }
++    }
++
++    return libicuuc != nullptr;
++}
++
++// Select libraries using the version override specified by the CLR_ICU_VERSION_OVERRIDE
++// environment variable.
++// The format of the string in this variable is majorVer[.minorVer[.subVer]] (the brackets
++// indicate optional parts).
++bool FindLibUsingOverride(int* majorVer, int* minorVer, int* subVer)
++{
++    char* versionOverride = getenv("CLR_ICU_VERSION_OVERRIDE");
++    if (versionOverride != nullptr)
++    {
++        int first = -1;
++        int second = -1;
++        int third = -1;
++
++        int matches = sscanf(versionOverride, "%d.%d.%d", &first, &second, &third);
++        if (matches > 0)
++        {
++            if (OpenICULibraries(first, second, third))
++            {
++                *majorVer = first;
++                *minorVer = second;
++                *subVer = third;
++                return true;
++            }
++        }
++    }
++
++    return false;
++}
++
++// Select the highest supported version of ICU present on the local machine
++// Search for library files with names including the major and minor version.
++bool FindLibWithMajorMinorVersion(int* majorVer, int* minorVer)
++{
++    for (int i = MaxICUVersion; i >= MinICUVersion; i--)
++    {
++        for (int j = MaxMinorICUVersion; j >= MinMinorICUVersion; j--)
++        {
++            if (OpenICULibraries(i, j, -1))
++            {
++                *majorVer = i;
++                *minorVer = j;
++                return true;
++            }
++        }
++    }
++
++    return false;
++}
++
++// Select the highest supported version of ICU present on the local machine
++// Search for library files with names including the major, minor and sub version.
++bool FindLibWithMajorMinorSubVersion(int* majorVer, int* minorVer, int* subVer)
++{
++    for (int i = MaxICUVersion; i >= MinICUVersion; i--)
++    {
++        for (int j = MaxMinorICUVersion; j >= MinMinorICUVersion; j--)
++        {
++            for (int k = MaxSubICUVersion; k >= MinSubICUVersion; k--)
++            {
++                if (OpenICULibraries(i, j, k))
++                {
++                    *majorVer = i;
++                    *minorVer = j;
++                    *subVer = k;
++                    return true;
++                }
++            }
++        }
++    }
++
++    return false;
++}
++
++// This function is ran at the end of dlopen for the current shared library
++__attribute__((constructor))
++void InitializeICUShim()
++{
++    int majorVer = -1;
++    int minorVer = -1;
++    int subVer = -1;
++
++    if (!FindLibUsingOverride(&majorVer, &minorVer, &subVer) &&
++        !FindLibWithMajorMinorVersion(&majorVer, &minorVer) &&
++        !FindLibWithMajorMinorSubVersion(&majorVer, &minorVer, &subVer))
++    {
++        // No usable ICU version found
++        fprintf(stderr, "No usable version of the ICU libraries was found\n");
++        abort();
++    }
++
++    char symbolName[128];
++    char symbolVersion[MaxICUVersionStringLength + 1] = "";
++
++    // Find out the format of the version string added to each symbol
++    // First try just the unversioned symbol
++    if (dlsym(libicuuc, "u_strlen") == nullptr)
++    {
++        // Now try just the _majorVer added
++        sprintf(symbolVersion, "_%d", majorVer);
++        sprintf(symbolName, "u_strlen%s", symbolVersion);
++        if (dlsym(libicuuc, symbolName) == nullptr)
++        {
++            // Now try the _majorVer_minorVer added
++            sprintf(symbolVersion, "_%d_%d", majorVer, minorVer);
++            sprintf(symbolName, "u_strlen%s", symbolVersion);
++            if (dlsym(libicuuc, symbolName) == nullptr)
++            {
++                // Finally, try the _majorVer_minorVer_subVer added
++                sprintf(symbolVersion, "_%d_%d_%d", majorVer, minorVer, subVer);
++                sprintf(symbolName, "u_strlen%s", symbolVersion);
++                if (dlsym(libicuuc, symbolName) == nullptr)
++                {
++                    fprintf(stderr, "ICU libraries use unknown symbol versioning\n");
++                    abort();
++                }
++            }
++        }
++    }
++
++    // Get pointers to all the ICU functions that are needed
++#define PER_FUNCTION_BLOCK(fn, lib) \
++    static_assert((sizeof(#fn) + MaxICUVersionStringLength + 1) <= sizeof(symbolName), "The symbolName is too small for symbol " #fn); \
++    sprintf(symbolName, #fn "%s", symbolVersion); \
++    fn##_ptr = (decltype(fn)*)dlsym(lib, symbolName); \
++    if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from " #lib "\n", symbolName); abort(); }
++
++    FOR_ALL_ICU_FUNCTIONS
++#undef PER_FUNCTION_BLOCK
++}
++
++__attribute__((destructor))
++void ShutdownICUShim()
++{
++    if (libicuuc != nullptr)
++    {
++        dlclose(libicuuc);
++    }
++
++    if (libicui18n != nullptr)
++    {
++        dlclose(libicui18n);
++    }
++}
+diff --git src/corefx/System.Globalization.Native/icushim.h src/corefx/System.Globalization.Native/icushim.h
+new file mode 100644
+index 0000000..c9214c3
+--- /dev/null
++++ src/corefx/System.Globalization.Native/icushim.h
+@@ -0,0 +1,237 @@
++// Licensed to the .NET Foundation under one or more agreements.
++// The .NET Foundation licenses this file to you under the MIT license.
++// See the LICENSE file in the project root for more information.
++//
++
++// Enable calling ICU functions through shims to enable support for 
++// multiple versions of ICU if the FEATURE_FIXED_ICU_VERSION is
++// not defined.
++
++#ifndef __ICUSHIM_H__
++#define __ICUSHIM_H__
++
++#include "config.h"
++
++#ifndef FEATURE_FIXED_ICU_VERSION
++#define U_DISABLE_RENAMING 1
++#endif
++
++// All ICU headers need to be included here so that all function prototypes are
++// available before the function pointers are declared below.
++#include <unicode/locid.h>
++#include <unicode/ucurr.h>
++#include <unicode/ucal.h>
++#include <unicode/uchar.h>
++#include <unicode/ucol.h>
++#include <unicode/udat.h>
++#include <unicode/udatpg.h>
++#include <unicode/uenum.h>
++#include <unicode/uidna.h>
++#include <unicode/uldnames.h>
++#include <unicode/ulocdata.h>
++#include <unicode/unorm2.h>
++#include <unicode/unum.h>
++#include <unicode/ures.h>
++#include <unicode/usearch.h>
++#include <unicode/utf16.h>
++#include <unicode/utypes.h>
++
++#ifndef FEATURE_FIXED_ICU_VERSION
++
++// List of all functions from the ICU libraries that are used in the System.Globalization.Native.so
++#define FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
++    PER_FUNCTION_BLOCK(u_charsToUChars, libicuuc) \
++    PER_FUNCTION_BLOCK(u_strlen, libicuuc) \
++    PER_FUNCTION_BLOCK(u_strncpy, libicuuc) \
++    PER_FUNCTION_BLOCK(u_tolower, libicuuc) \
++    PER_FUNCTION_BLOCK(u_toupper, libicuuc) \
++    PER_FUNCTION_BLOCK(ucal_add, libicui18n) \
++    PER_FUNCTION_BLOCK(ucal_close, libicui18n) \
++    PER_FUNCTION_BLOCK(ucal_get, libicui18n) \
++    PER_FUNCTION_BLOCK(ucal_getAttribute, libicui18n) \
++    PER_FUNCTION_BLOCK(ucal_getKeywordValuesForLocale, libicui18n) \
++    PER_FUNCTION_BLOCK(ucal_getLimit, libicui18n) \
++    PER_FUNCTION_BLOCK(ucal_getTimeZoneDisplayName, libicui18n) \
++    PER_FUNCTION_BLOCK(ucal_open, libicui18n) \
++    PER_FUNCTION_BLOCK(ucal_set, libicui18n) \
++    PER_FUNCTION_BLOCK(ucol_close, libicui18n) \
++    PER_FUNCTION_BLOCK(ucol_closeElements, libicui18n) \
++    PER_FUNCTION_BLOCK(ucol_getRules, libicui18n) \
++    PER_FUNCTION_BLOCK(ucol_getSortKey, libicui18n) \
++    PER_FUNCTION_BLOCK(ucol_getStrength, libicui18n) \
++    PER_FUNCTION_BLOCK(ucol_next, libicui18n) \
++    PER_FUNCTION_BLOCK(ucol_open, libicui18n) \
++    PER_FUNCTION_BLOCK(ucol_openElements, libicui18n) \
++    PER_FUNCTION_BLOCK(ucol_openRules, libicui18n) \
++    PER_FUNCTION_BLOCK(ucol_safeClone, libicui18n) \
++    PER_FUNCTION_BLOCK(ucol_setAttribute, libicui18n) \
++    PER_FUNCTION_BLOCK(ucol_strcoll, libicui18n) \
++    PER_FUNCTION_BLOCK(ucurr_forLocale, libicui18n) \
++    PER_FUNCTION_BLOCK(ucurr_getName, libicui18n) \
++    PER_FUNCTION_BLOCK(udat_close, libicui18n) \
++    PER_FUNCTION_BLOCK(udat_countSymbols, libicui18n) \
++    PER_FUNCTION_BLOCK(udat_getSymbols, libicui18n) \
++    PER_FUNCTION_BLOCK(udat_open, libicui18n) \
++    PER_FUNCTION_BLOCK(udat_setCalendar, libicui18n) \
++    PER_FUNCTION_BLOCK(udat_toPattern, libicui18n) \
++    PER_FUNCTION_BLOCK(udatpg_close, libicui18n) \
++    PER_FUNCTION_BLOCK(udatpg_getBestPattern, libicui18n) \
++    PER_FUNCTION_BLOCK(udatpg_open, libicui18n) \
++    PER_FUNCTION_BLOCK(uenum_close, libicuuc) \
++    PER_FUNCTION_BLOCK(uenum_count, libicuuc) \
++    PER_FUNCTION_BLOCK(uenum_next, libicuuc) \
++    PER_FUNCTION_BLOCK(uidna_close, libicuuc) \
++    PER_FUNCTION_BLOCK(uidna_nameToASCII, libicuuc) \
++    PER_FUNCTION_BLOCK(uidna_nameToUnicode, libicuuc) \
++    PER_FUNCTION_BLOCK(uidna_openUTS46, libicuuc) \
++    PER_FUNCTION_BLOCK(uldn_close, libicui18n) \
++    PER_FUNCTION_BLOCK(uldn_keyValueDisplayName, libicui18n) \
++    PER_FUNCTION_BLOCK(uldn_open, libicui18n) \
++    PER_FUNCTION_BLOCK(uloc_canonicalize, libicuuc) \
++    PER_FUNCTION_BLOCK(uloc_getBaseName, libicuuc) \
++    PER_FUNCTION_BLOCK(uloc_getCharacterOrientation, libicuuc) \
++    PER_FUNCTION_BLOCK(uloc_getCountry, libicuuc) \
++    PER_FUNCTION_BLOCK(uloc_getDefault, libicuuc) \
++    PER_FUNCTION_BLOCK(uloc_getDisplayCountry, libicuuc) \
++    PER_FUNCTION_BLOCK(uloc_getDisplayLanguage, libicuuc) \
++    PER_FUNCTION_BLOCK(uloc_getDisplayName, libicuuc) \
++    PER_FUNCTION_BLOCK(uloc_getISO3Country, libicuuc) \
++    PER_FUNCTION_BLOCK(uloc_getKeywordValue, libicuuc) \
++    PER_FUNCTION_BLOCK(uloc_getLanguage, libicuuc) \
++    PER_FUNCTION_BLOCK(uloc_getLCID, libicuuc) \
++    PER_FUNCTION_BLOCK(uloc_getName, libicuuc) \
++    PER_FUNCTION_BLOCK(uloc_getParent, libicuuc) \
++    PER_FUNCTION_BLOCK(uloc_setKeywordValue, libicuuc) \
++    PER_FUNCTION_BLOCK(ulocdata_getMeasurementSystem, libicui18n) \
++    PER_FUNCTION_BLOCK(unorm2_getNFCInstance, libicuuc) \
++    PER_FUNCTION_BLOCK(unorm2_getNFDInstance, libicuuc) \
++    PER_FUNCTION_BLOCK(unorm2_getNFKCInstance, libicuuc) \
++    PER_FUNCTION_BLOCK(unorm2_getNFKDInstance, libicuuc) \
++    PER_FUNCTION_BLOCK(unorm2_isNormalized, libicuuc) \
++    PER_FUNCTION_BLOCK(unorm2_normalize, libicuuc) \
++    PER_FUNCTION_BLOCK(unum_close, libicui18n) \
++    PER_FUNCTION_BLOCK(unum_getAttribute, libicui18n) \
++    PER_FUNCTION_BLOCK(unum_getSymbol, libicui18n) \
++    PER_FUNCTION_BLOCK(unum_open, libicui18n) \
++    PER_FUNCTION_BLOCK(unum_toPattern, libicui18n) \
++    PER_FUNCTION_BLOCK(ures_close, libicuuc) \
++    PER_FUNCTION_BLOCK(ures_getByKey, libicuuc) \
++    PER_FUNCTION_BLOCK(ures_getSize, libicuuc) \
++    PER_FUNCTION_BLOCK(ures_getStringByIndex, libicuuc) \
++    PER_FUNCTION_BLOCK(ures_open, libicuuc) \
++    PER_FUNCTION_BLOCK(usearch_close, libicui18n) \
++    PER_FUNCTION_BLOCK(usearch_first, libicui18n) \
++    PER_FUNCTION_BLOCK(usearch_getMatchedLength, libicui18n) \
++    PER_FUNCTION_BLOCK(usearch_last, libicui18n) \
++    PER_FUNCTION_BLOCK(usearch_openFromCollator, libicui18n)
++
++#if HAVE_SET_MAX_VARIABLE
++#define FOR_ALL_ICU_FUNCTIONS \
++    FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
++    PER_FUNCTION_BLOCK(ucol_setMaxVariable, libicui18n)
++#else
++#define FOR_ALL_ICU_FUNCTIONS \
++    FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
++    PER_FUNCTION_BLOCK(ucol_setVariableTop, libicui18n)
++#endif
++
++// Declare pointers to all the used ICU functions
++#define PER_FUNCTION_BLOCK(fn, lib) extern decltype(fn)* fn##_ptr;
++FOR_ALL_ICU_FUNCTIONS
++#undef PER_FUNCTION_BLOCK
++
++// Redefine all calls to ICU functions as calls through pointers that are set
++// to the functions of the selected version of ICU in the initialization.
++#define u_charsToUChars(...) u_charsToUChars_ptr(__VA_ARGS__)
++#define u_strlen(...) u_strlen_ptr(__VA_ARGS__)
++#define u_strncpy(...) u_strncpy_ptr(__VA_ARGS__)
++#define u_tolower(...) u_tolower_ptr(__VA_ARGS__)
++#define u_toupper(...) u_toupper_ptr(__VA_ARGS__)
++#define ucal_add(...) ucal_add_ptr(__VA_ARGS__)
++#define ucal_close(...) ucal_close_ptr(__VA_ARGS__)
++#define ucal_get(...) ucal_get_ptr(__VA_ARGS__)
++#define ucal_getAttribute(...) ucal_getAttribute_ptr(__VA_ARGS__)
++#define ucal_getKeywordValuesForLocale(...) ucal_getKeywordValuesForLocale_ptr(__VA_ARGS__)
++#define ucal_getLimit(...) ucal_getLimit_ptr(__VA_ARGS__)
++#define ucal_getTimeZoneDisplayName(...) ucal_getTimeZoneDisplayName_ptr(__VA_ARGS__)
++#define ucal_open(...) ucal_open_ptr(__VA_ARGS__)
++#define ucal_set(...) ucal_set_ptr(__VA_ARGS__)
++#define ucol_close(...) ucol_close_ptr(__VA_ARGS__)
++#define ucol_closeElements(...) ucol_closeElements_ptr(__VA_ARGS__)
++#define ucol_getRules(...) ucol_getRules_ptr(__VA_ARGS__)
++#define ucol_getSortKey(...) ucol_getSortKey_ptr(__VA_ARGS__)
++#define ucol_getStrength(...) ucol_getStrength_ptr(__VA_ARGS__)
++#define ucol_next(...) ucol_next_ptr(__VA_ARGS__)
++#define ucol_open(...) ucol_open_ptr(__VA_ARGS__)
++#define ucol_openElements(...) ucol_openElements_ptr(__VA_ARGS__)
++#define ucol_openRules(...) ucol_openRules_ptr(__VA_ARGS__)
++#define ucol_safeClone(...) ucol_safeClone_ptr(__VA_ARGS__)
++#define ucol_setAttribute(...) ucol_setAttribute_ptr(__VA_ARGS__)
++#if HAVE_SET_MAX_VARIABLE
++#define ucol_setMaxVariable(...) ucol_setMaxVariable_ptr(__VA_ARGS__)
++#else
++#define ucol_setVariableTop(...) ucol_setVariableTop_ptr(__VA_ARGS__)
++#endif
++#define ucol_strcoll(...) ucol_strcoll_ptr(__VA_ARGS__)
++#define ucurr_forLocale(...) ucurr_forLocale_ptr(__VA_ARGS__)
++#define ucurr_getName(...) ucurr_getName_ptr(__VA_ARGS__)
++#define udat_close(...) udat_close_ptr(__VA_ARGS__)
++#define udat_countSymbols(...) udat_countSymbols_ptr(__VA_ARGS__)
++#define udat_getSymbols(...) udat_getSymbols_ptr(__VA_ARGS__)
++#define udat_open(...) udat_open_ptr(__VA_ARGS__)
++#define udat_setCalendar(...) udat_setCalendar_ptr(__VA_ARGS__)
++#define udat_toPattern(...) udat_toPattern_ptr(__VA_ARGS__)
++#define udatpg_close(...) udatpg_close_ptr(__VA_ARGS__)
++#define udatpg_getBestPattern(...) udatpg_getBestPattern_ptr(__VA_ARGS__)
++#define udatpg_open(...) udatpg_open_ptr(__VA_ARGS__)
++#define uenum_close(...) uenum_close_ptr(__VA_ARGS__)
++#define uenum_count(...) uenum_count_ptr(__VA_ARGS__)
++#define uenum_next(...) uenum_next_ptr(__VA_ARGS__)
++#define uidna_close(...) uidna_close_ptr(__VA_ARGS__)
++#define uidna_nameToASCII(...) uidna_nameToASCII_ptr(__VA_ARGS__)
++#define uidna_nameToUnicode(...) uidna_nameToUnicode_ptr(__VA_ARGS__)
++#define uidna_openUTS46(...) uidna_openUTS46_ptr(__VA_ARGS__)
++#define uldn_close(...) uldn_close_ptr(__VA_ARGS__)
++#define uldn_keyValueDisplayName(...) uldn_keyValueDisplayName_ptr(__VA_ARGS__)
++#define uldn_open(...) uldn_open_ptr(__VA_ARGS__)
++#define uloc_canonicalize(...) uloc_canonicalize_ptr(__VA_ARGS__)
++#define uloc_getBaseName(...) uloc_getBaseName_ptr(__VA_ARGS__)
++#define uloc_getCharacterOrientation(...) uloc_getCharacterOrientation_ptr(__VA_ARGS__)
++#define uloc_getCountry(...) uloc_getCountry_ptr(__VA_ARGS__)
++#define uloc_getDefault(...) uloc_getDefault_ptr(__VA_ARGS__)
++#define uloc_getDisplayCountry(...) uloc_getDisplayCountry_ptr(__VA_ARGS__)
++#define uloc_getDisplayLanguage(...) uloc_getDisplayLanguage_ptr(__VA_ARGS__)
++#define uloc_getDisplayName(...) uloc_getDisplayName_ptr(__VA_ARGS__)
++#define uloc_getISO3Country(...) uloc_getISO3Country_ptr(__VA_ARGS__)
++#define uloc_getKeywordValue(...) uloc_getKeywordValue_ptr(__VA_ARGS__)
++#define uloc_getLanguage(...) uloc_getLanguage_ptr(__VA_ARGS__)
++#define uloc_getLCID(...) uloc_getLCID_ptr(__VA_ARGS__)
++#define uloc_getName(...) uloc_getName_ptr(__VA_ARGS__)
++#define uloc_getParent(...) uloc_getParent_ptr(__VA_ARGS__)
++#define uloc_setKeywordValue(...) uloc_setKeywordValue_ptr(__VA_ARGS__)
++#define ulocdata_getMeasurementSystem(...) ulocdata_getMeasurementSystem_ptr(__VA_ARGS__)
++#define unorm2_getNFCInstance(...) unorm2_getNFCInstance_ptr(__VA_ARGS__)
++#define unorm2_getNFDInstance(...) unorm2_getNFDInstance_ptr(__VA_ARGS__)
++#define unorm2_getNFKCInstance(...) unorm2_getNFKCInstance_ptr(__VA_ARGS__)
++#define unorm2_getNFKDInstance(...) unorm2_getNFKDInstance_ptr(__VA_ARGS__)
++#define unorm2_isNormalized(...) unorm2_isNormalized_ptr(__VA_ARGS__)
++#define unorm2_normalize(...) unorm2_normalize_ptr(__VA_ARGS__)
++#define unum_close(...) unum_close_ptr(__VA_ARGS__)
++#define unum_getAttribute(...) unum_getAttribute_ptr(__VA_ARGS__)
++#define unum_getSymbol(...) unum_getSymbol_ptr(__VA_ARGS__)
++#define unum_open(...) unum_open_ptr(__VA_ARGS__)
++#define unum_toPattern(...) unum_toPattern_ptr(__VA_ARGS__)
++#define ures_close(...) ures_close_ptr(__VA_ARGS__)
++#define ures_getByKey(...) ures_getByKey_ptr(__VA_ARGS__)
++#define ures_getSize(...) ures_getSize_ptr(__VA_ARGS__)
++#define ures_getStringByIndex(...) ures_getStringByIndex_ptr(__VA_ARGS__)
++#define ures_open(...) ures_open_ptr(__VA_ARGS__)
++#define usearch_close(...) usearch_close_ptr(__VA_ARGS__)
++#define usearch_first(...) usearch_first_ptr(__VA_ARGS__)
++#define usearch_getMatchedLength(...) usearch_getMatchedLength_ptr(__VA_ARGS__)
++#define usearch_last(...) usearch_last_ptr(__VA_ARGS__)
++#define usearch_openFromCollator(...) usearch_openFromCollator_ptr(__VA_ARGS__)
++
++#endif // !FEATURE_ICU_VERSION_RESILIENT
++
++#endif // __ICUSHIM_H__
+diff --git src/corefx/System.Globalization.Native/idna.cpp src/corefx/System.Globalization.Native/idna.cpp
+index 4820d2c..23942b3 100644
+--- src/corefx/System.Globalization.Native/idna.cpp
++++ src/corefx/System.Globalization.Native/idna.cpp
+@@ -4,7 +4,7 @@
+ //
+ 
+ #include <stdint.h>
+-#include <unicode/uidna.h>
++#include "icushim.h"
+ 
+ const uint32_t AllowUnassigned = 0x1;
+ const uint32_t UseStd3AsciiRules = 0x2;
+diff --git src/corefx/System.Globalization.Native/locale.cpp src/corefx/System.Globalization.Native/locale.cpp
+index 1cb564a..0a85ae1 100644
+--- src/corefx/System.Globalization.Native/locale.cpp
++++ src/corefx/System.Globalization.Native/locale.cpp
+@@ -9,6 +9,7 @@
+ #include <stdlib.h>
+ #include <locale.h>
+ 
++#include "icushim.h"
+ #include "locale.hpp"
+ 
+ int32_t UErrorCodeToBool(UErrorCode status)
+diff --git src/corefx/System.Globalization.Native/locale.hpp src/corefx/System.Globalization.Native/locale.hpp
+index ac28fb1..79328f3 100644
+--- src/corefx/System.Globalization.Native/locale.hpp
++++ src/corefx/System.Globalization.Native/locale.hpp
+@@ -2,8 +2,6 @@
+ // The .NET Foundation licenses this file to you under the MIT license.
+ // See the LICENSE file in the project root for more information.
+ 
+-#include "unicode/locid.h"
+-
+ /*
+ Function:
+ UErrorCodeToBool
+diff --git src/corefx/System.Globalization.Native/localeNumberData.cpp src/corefx/System.Globalization.Native/localeNumberData.cpp
+index 595cb13..a3586b5 100644
+--- src/corefx/System.Globalization.Native/localeNumberData.cpp
++++ src/corefx/System.Globalization.Native/localeNumberData.cpp
+@@ -7,8 +7,7 @@
+ #include <string.h>
+ #include <vector>
+ 
+-#include <unicode/ulocdata.h>
+-
++#include "icushim.h"
+ #include "locale.hpp"
+ #include "holders.h"
+ 
+diff --git src/corefx/System.Globalization.Native/localeStringData.cpp src/corefx/System.Globalization.Native/localeStringData.cpp
+index a8dcc51..54ef8f0 100644
+--- src/corefx/System.Globalization.Native/localeStringData.cpp
++++ src/corefx/System.Globalization.Native/localeStringData.cpp
+@@ -7,6 +7,7 @@
+ #include <string.h>
+ #include <vector>
+ 
++#include "icushim.h"
+ #include "locale.hpp"
+ #include "holders.h"
+ 
+diff --git src/corefx/System.Globalization.Native/normalization.cpp src/corefx/System.Globalization.Native/normalization.cpp
+index f96f5ee..014894a 100644
+--- src/corefx/System.Globalization.Native/normalization.cpp
++++ src/corefx/System.Globalization.Native/normalization.cpp
+@@ -4,7 +4,7 @@
+ //
+ 
+ #include <stdint.h>
+-#include <unicode/unorm2.h>
++#include "icushim.h"
+ 
+ /*
+  * These values should be kept in sync with System.Text.NormalizationForm
+diff --git src/corefx/System.Globalization.Native/timeZoneInfo.cpp src/corefx/System.Globalization.Native/timeZoneInfo.cpp
+index d0e01e5..0dd28b4 100644
+--- src/corefx/System.Globalization.Native/timeZoneInfo.cpp
++++ src/corefx/System.Globalization.Native/timeZoneInfo.cpp
+@@ -5,8 +5,8 @@
+ 
+ #include <stdint.h>
+ #include <unistd.h>
+-#include <unicode/ucal.h>
+ 
++#include "icushim.h"
+ #include "locale.hpp"
+ #include "holders.h"
+ #include "errors.h"

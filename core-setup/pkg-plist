@@ -1,7 +1,7 @@
-%%BOOTSTRAPDIR%%/dotnet
-%%BOOTSTRAPDIR_FXR%%/libhostfxr.so
-%%BOOTSTRAPDIR_SDK%%/libhostfxr.so
-%%BOOTSTRAPDIR_SDK%%/libhostpolicy.so
-%%BOOTSTRAPDIR_SHARE%%/corehost
-%%BOOTSTRAPDIR_SHARE%%/libhostfxr.so
-%%BOOTSTRAPDIR_SHARE%%/libhostpolicy.so
+%%DOTNETDIR%%/dotnet
+%%DOTNETDIR_FXR%%/libhostfxr.so
+%%DOTNETDIR_SDK%%/libhostfxr.so
+%%DOTNETDIR_SDK%%/libhostpolicy.so
+%%DOTNETDIR_SHARE%%/corehost
+%%DOTNETDIR_SHARE%%/libhostfxr.so
+%%DOTNETDIR_SHARE%%/libhostpolicy.so

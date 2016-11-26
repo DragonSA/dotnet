@@ -1,4 +1,4 @@
---- src/pal/src/thread/process.cpp.orig	2016-11-01 20:05:29 UTC
+--- src/pal/src/thread/process.cpp.orig	2016-08-10 00:32:28 UTC
 +++ src/pal/src/thread/process.cpp
 @@ -2888,21 +2888,7 @@ BOOL InitializeFlushProcessWriteBuffers(
      // Verify that the s_helperPage is really aligned to the VIRTUAL_PAGE_SIZE

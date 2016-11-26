@@ -1,20 +1,20 @@
---- build.sh.orig	2016-11-25 08:11:15 UTC
+--- build.sh.orig	2016-11-26 04:54:39 UTC
 +++ build.sh
-@@ -213,13 +213,6 @@ build_coreclr()
-         return
-     fi
+@@ -185,13 +185,6 @@ build_coreclr()
  
--    echo "Executing $buildTool install -j $NumProc"
+     # Build CoreCLR
+ 
+-    echo "Executing $buildTool install -j $NumProc $__UnprocessedBuildArgs"
 -
--    $buildTool install -j $NumProc
+-    $buildTool install -j $NumProc $__UnprocessedBuildArgs
 -    if [ $? != 0 ]; then
 -        echo "Failed to build coreclr components."
 -        exit 1
 -    fi
- 	popd
  }
  
-@@ -386,7 +379,7 @@ case $CPUName in
+ restoreBuildTools()
+@@ -401,7 +394,7 @@ case $CPUName in
          __HostArch=x86
          ;;
  
@@ -23,15 +23,17 @@
          __BuildArch=x64
          __HostArch=x64
          ;;
-@@ -572,7 +565,6 @@ while :; do
+@@ -575,9 +568,7 @@ while :; do
+ 
+         configureonly)
              __ConfigureOnly=1
+-            __SkipCoreCLR=1
              __SkipMSCorLib=1
-             __SkipNuget=1
 -            __IncludeTests=
              ;;
  
          skipconfigure)
-@@ -672,7 +664,7 @@ __BinDir="$__RootBinDir/Product/$__Build
+@@ -686,7 +677,7 @@ __BinDir="$__RootBinDir/Product/$__Build
  __PackagesBinDir="$__BinDir/.nuget"
  __ToolsDir="$__RootBinDir/tools"
  __TestWorkingDir="$__RootBinDir/tests/$__BuildOS.$__BuildArch.$__BuildType"
@@ -40,7 +42,7 @@
  __TestIntermediatesDir="$__RootBinDir/tests/obj/$__BuildOS.$__BuildArch.$__BuildType"
  __isMSBuildOnNETCoreSupported=0
  
-@@ -726,5 +718,4 @@ fi
+@@ -750,5 +741,4 @@ fi
  # Build complete
  
  echo "Repo successfully built."
