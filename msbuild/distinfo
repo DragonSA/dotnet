@@ -1,0 +1,15 @@
+TIMESTAMP = 1479975446
+SHA256 (mono_msbuild_bootstrap_5e01f07.zip) = 283deb47a7ad5f9b8127c56a1a6fc302ba2646a4f3817fc7dadc194327feee81
+SIZE (mono_msbuild_bootstrap_5e01f07.zip) = 7369003
+SHA256 (dotnet-dev-centos-x64.1.0.0-preview3-003686.tar.gz) = da422f7befecab1cc4f85761e8290cb6b89e7c495ecb42a388b71d76229b4671
+SIZE (dotnet-dev-centos-x64.1.0.0-preview3-003686.tar.gz) = 72781275
+SHA256 (microbuild.core.0.2.0.nupkg) = fbbd636f7dc9b29763bfb3c7384f56083176766d7c22952384204287282040f9
+SIZE (microbuild.core.0.2.0.nupkg) = 4891
+SHA256 (microsoft.dotnet.buildtools.1.0.27-prerelease-00927-05.nupkg) = 89c6f09838f6a6ff1222c544a9d59a9c98ef22be341c3d2931fbeee84b1e4123
+SIZE (microsoft.dotnet.buildtools.1.0.27-prerelease-00927-05.nupkg) = 3139991
+SHA256 (microsoft.portable.targets.0.1.1-dev.nupkg) = 31cc7c6cdf7bdd7a9ce0d09a03b3494de754a5673e39555b75c799d8c0f477c8
+SIZE (microsoft.portable.targets.0.1.1-dev.nupkg) = 15162
+SHA256 (nerdbank.gitversioning.1.5.46.nupkg) = f02566abdef3083e848e9968200960b05ddca861d5994f16f04a5033fb6fe43c
+SIZE (nerdbank.gitversioning.1.5.46.nupkg) = 1332287
+SHA256 (Microsoft-msbuild-0.0.0-ee1e95c_GH0.tar.gz) = 0d28f51757586669f0497f836756e0fde553c642acc4451ddc9f8dd21b651141
+SIZE (Microsoft-msbuild-0.0.0-ee1e95c_GH0.tar.gz) = 6015088

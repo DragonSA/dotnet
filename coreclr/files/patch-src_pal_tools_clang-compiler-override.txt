@@ -1,0 +1,7 @@
+--- src/pal/tools/clang-compiler-override.txt.orig	2016-11-01 20:05:29 UTC
++++ src/pal/tools/clang-compiler-override.txt
+@@ -17,4 +17,3 @@ SET (CLR_DEFINES_CHECKED_INIT           
+ SET (CLR_DEFINES_RELEASE_INIT            NDEBUG URTBLDENV_FRIENDLY=Retail)
+ SET (CLR_DEFINES_RELWITHDEBINFO_INIT     NDEBUG URTBLDENV_FRIENDLY=Retail)
+ 
+-SET (CMAKE_INSTALL_PREFIX                $ENV{__CMakeBinDir})

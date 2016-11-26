@@ -1,0 +1,64 @@
+# Created by: David Naylor <dbn@FreeBSD.org>
+# $FreeBSD$
+
+PORTNAME=	core-setup
+PORTVERSION=	1.1.0
+CATEGORIES=	devel
+DISTVERSIONPREFIX=	v
+
+MAINTAINER=	mono@FreeBSD.org
+COMMENT=
+
+LICENSE=	MIT
+LICENSE_FILE=	${WRKSRC}/LICENSE
+
+BUILD_DEPENDS=	clang${LLVM_VERSION:S/.//}:lang/clang${LLVM_VERSION:S/.//} \
+		bash:shells/bash
+
+USE_GITHUB=	yes
+GH_ACCOUNT=	dotnet
+
+USES=		cmake shebangfix
+SHEBANG_FILES=	${WRKSRC}/src/corehost/build.sh \
+
+BUILD_WRKSRC=	${BUILDDIR}
+INSTALL_TARGET=	install/strip
+INSTALL_WRKSRC=	${BUILDDIR}
+PLIST_SUB=	BOOTSTRAPDIR=${BOOTSTRAPDIR} \
+		BOOTSTRAPDIR_SHARE=${BOOTSTRAPDIR_SHARE} \
+		BOOTSTRAPDIR_SDK=${BOOTSTRAPDIR_SDK} \
+		BOOTSTRAPDIR_FXR=${BOOTSTRAPDIR_FXR}
+
+BUILDDIR=	${WRKDIR}/.build
+BOOTSTRAPDIR=	dotnet/dotnetcli
+BOOTSTRAPDIR_SHARE=	${BOOTSTRAPDIR}/shared/Microsoft.NETCore.App/1.0.1
+BOOTSTRAPDIR_SDK=	${BOOTSTRAPDIR}/sdk/${SDK_VERSION}
+BOOTSTRAPDIR_FXR=	${BOOTSTRAPDIR}/host/fxr/1.0.1
+LLVM_VERSION=	3.7
+SDK_VERSION=	1.0.0-preview3-003686	# ${WRKSRC}/DotnetCLIVersion.txt
+
+do-configure:
+	${MKDIR} ${BUILDDIR}
+	cd ${BUILDDIR} && \
+		${SETENV} ${CONFIGURE_ENV} ${MAKE_ENV} ${WRKSRC}/src/corehost/build.sh \
+			--arch ${ARCH} \
+			--rid ${PORTVERSION} \
+			--hostver ${PORTVERSION} \
+			--fxrver ${PORTVERSION} \
+			--policyver ${PORTVERSION} \
+			--commithash 928f772
+
+do-install:
+	${MKDIR} ${STAGEDIR}${PREFIX}/${BOOTSTRAPDIR} \
+		${STAGEDIR}${PREFIX}/${BOOTSTRAPDIR_SHARE} \
+		${STAGEDIR}${PREFIX}/${BOOTSTRAPDIR_SDK} \
+		${STAGEDIR}${PREFIX}/${BOOTSTRAPDIR_FXR}
+	${INSTALL_SCRIPT} ${FILES}/dotnet ${STAGEDIR}${PREFIX}/${BOOTSTRAPDIR}/
+	${INSTALL_PROGRAM} ${BUILDDIR}/cli/exe/dotnet ${STAGEDIR}${PREFIX}/${BOOTSTRAPDIR_SHARE}/corehost
+	${INSTALL_LIB} ${BUILDDIR}/cli/dll/libhostpolicy.so ${STAGEDIR}${PREFIX}/${BOOTSTRAPDIR_SHARE}/
+	${INSTALL_LIB} ${BUILDDIR}/cli/dll/libhostpolicy.so ${STAGEDIR}${PREFIX}/${BOOTSTRAPDIR_SDK}/
+	${INSTALL_LIB} ${BUILDDIR}/cli/fxr/libhostfxr.so ${STAGEDIR}${PREFIX}/${BOOTSTRAPDIR_SHARE}/
+	${INSTALL_LIB} ${BUILDDIR}/cli/fxr/libhostfxr.so ${STAGEDIR}${PREFIX}/${BOOTSTRAPDIR_FXR}/
+	${INSTALL_LIB} ${BUILDDIR}/cli/fxr/libhostfxr.so ${STAGEDIR}${PREFIX}/${BOOTSTRAPDIR_SDK}/
+
+.include <bsd.port.mk>

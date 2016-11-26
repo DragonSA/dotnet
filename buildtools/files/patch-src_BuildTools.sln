@@ -1,0 +1,11 @@
+--- src/BuildTools.sln.orig	2016-11-22 17:34:38 UTC
++++ src/BuildTools.sln
+@@ -51,7 +51,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F
+ EndProject
+ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.DotNet.VersionTools", "Microsoft.DotNet.VersionTools\Microsoft.DotNet.VersionTools.csproj", "{8D524FA5-A8C5-4EBD-BA8B-2A4FED03EE58}"
+ EndProject
+-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.DotNet.Build.VstsBuildsApi", "Microsoft.DotNet.Build.VSTSBuildsApi\Microsoft.DotNet.Build.VstsBuildsApi.csproj", "{DD658734-88B2-48AD-8ADC-69D5C5798D9B}"
++Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.DotNet.Build.VstsBuildsApi", "Microsoft.DotNet.Build.VstsBuildsApi\Microsoft.DotNet.Build.VstsBuildsApi.csproj", "{DD658734-88B2-48AD-8ADC-69D5C5798D9B}"
+ EndProject
+ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.DotNet.Build.Tasks.net45", "Microsoft.DotNet.Build.Tasks.net45\Microsoft.DotNet.Build.Tasks.net45.csproj", "{B3331D88-7569-42D5-919B-F267DA011911}"
+ EndProject

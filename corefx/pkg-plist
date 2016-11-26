@@ -1,0 +1,7 @@
+%%BOOTSTRAPDIR_SHARE%%/System.IO.Compression.Native.so
+%%BOOTSTRAPDIR_SHARE%%/System.Native.a
+%%BOOTSTRAPDIR_SHARE%%/System.Native.so
+%%BOOTSTRAPDIR_SHARE%%/System.Net.Http.Native.so
+%%BOOTSTRAPDIR_SHARE%%/System.Net.Security.Native.so
+%%BOOTSTRAPDIR_SHARE%%/System.Security.Cryptography.Native.OpenSsl.so
+%%BOOTSTRAPDIR_SHARE%%/System.Security.Cryptography.Native.so

@@ -1,0 +1,5 @@
+#!/bin/sh
+
+corehost=`realpath $(dirname $0)/shared/Microsoft.NETCore.App/1.0.1/corehost`
+
+exec $corehost "$@"
