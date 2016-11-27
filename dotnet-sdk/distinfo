@@ -1,0 +1,5 @@
+TIMESTAMP = 1480162518
+SHA256 (dotnet-dev-centos-x64.1.0.0-preview3-003686.tar.gz) = da422f7befecab1cc4f85761e8290cb6b89e7c495ecb42a388b71d76229b4671
+SIZE (dotnet-dev-centos-x64.1.0.0-preview3-003686.tar.gz) = 72781275
+SHA256 (dotnet-dev-freebsd-noarch.1.0.0-preview3-003686.tar.gz) = 751e46d8f14fde96f8735b61c1c31968eb52218786c6d353a9f293090fb00986
+SIZE (dotnet-dev-freebsd-noarch.1.0.0-preview3-003686.tar.gz) = 956024
