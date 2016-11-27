@@ -37,7 +37,6 @@ SDK=		dotnet-dev-centos-x64.${SDK_VERSION}.tar.gz
 SDK_VERSION=	1.0.0-preview3-003686	# ${WRKSRC}/DotnetCLIVersion.txt
 
 post-extract:
-	${MKDIR} ${WRKSRC}/cache
 .for extract in packages:${BOOTSTRAP} Tools/dotnetcli:${SDK}
 	${MKDIR} ${WRKSRC}/${extract:C/:.*//}
 	${EXTRACT_CMD} -C ${WRKSRC}/${extract:C/:.*//} ${EXTRACT_BEFORE_ARGS} ${DISTDIR}/${extract:C/.*://} ${EXTRACT_AFTER_ARGS}

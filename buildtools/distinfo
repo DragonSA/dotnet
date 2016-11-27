@@ -1,9 +1,11 @@
-TIMESTAMP = 1479879005
+TIMESTAMP = 1480159430
+SHA256 (dotnet-dev-centos-x64.1.0.0-preview3-003686.tar.gz) = da422f7befecab1cc4f85761e8290cb6b89e7c495ecb42a388b71d76229b4671
+SIZE (dotnet-dev-centos-x64.1.0.0-preview3-003686.tar.gz) = 72781275
 SHA256 (nuget.commandline.3.4.3.nupkg) = c04056e6c544c9a690343c9a8422fcd2fbfd6718b3d31267ab9be5ea1f1e078a
 SIZE (nuget.commandline.3.4.3.nupkg) = 1211078
 SHA256 (microsoft.dotnet.buildtools.1.0.26-prerelease-00802-01.nupkg) = dc32a5e5f1adf0d62135b8dc1c15fed2f2a99ddfa91bc7202bf98179f16714fc
 SIZE (microsoft.dotnet.buildtools.1.0.26-prerelease-00802-01.nupkg) = 3410095
 SHA256 (microsoft.dotnet.buildtools.run.1.0.0-prerelease-00807-04.nupkg) = de33341e54897017ec139f2792bea856572f1821bc458384a5707b75f5c45530
 SIZE (microsoft.dotnet.buildtools.run.1.0.0-prerelease-00807-04.nupkg) = 234924
-SHA256 (dotnet-buildtools-1.1.0-a4da74d_GH0.tar.gz) = 499573bf48353d67c1bcffd5a693f2b88ba869df4b3ab23255433ef49a34ca5f
-SIZE (dotnet-buildtools-1.1.0-a4da74d_GH0.tar.gz) = 679969
+SHA256 (dotnet-buildtools-1.1.0-d3eecda_GH0.tar.gz) = 4afe4608ff36bd6cf5e9e37b27d5af96943a582001a04598696c74e9ffecf90a
+SIZE (dotnet-buildtools-1.1.0-d3eecda_GH0.tar.gz) = 663431
