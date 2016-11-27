@@ -32,6 +32,7 @@ DOTNETDIR_SHARE=${DOTNETDIR}/shared/Microsoft.NETCore.App/1.0.1
 DOTNETDIR_SDK=	${DOTNETDIR}/sdk/${SDK_VERSION}
 DOTNETDIR_FXR=	${DOTNETDIR}/host/fxr/1.0.1
 LLVM_VERSION=	3.7
+SDK_VERSION=	1.0.0-preview3-003686
 
 post-install:
 	${FIND} ${STAGEDIR}${PREFIX}/${DOTNETDIR_SHARE} -name '*.dbg' -delete
