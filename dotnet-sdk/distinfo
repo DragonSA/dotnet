@@ -1,5 +1,5 @@
-TIMESTAMP = 1480162518
-SHA256 (dotnet-dev-centos-x64.1.0.0-preview3-003686.tar.gz) = da422f7befecab1cc4f85761e8290cb6b89e7c495ecb42a388b71d76229b4671
-SIZE (dotnet-dev-centos-x64.1.0.0-preview3-003686.tar.gz) = 72781275
-SHA256 (dotnet-dev-freebsd-noarch.1.0.0-preview3-003686.tar.gz) = 751e46d8f14fde96f8735b61c1c31968eb52218786c6d353a9f293090fb00986
-SIZE (dotnet-dev-freebsd-noarch.1.0.0-preview3-003686.tar.gz) = 956024
+TIMESTAMP = 1484070760
+SHA256 (dotnet-dev-noplat-noarch.1.0.0-preview5-004226.tar.xz) = 45cd6f352c8c5d945582358ea967f8c5737eed1efad417c512acbf35fa331539
+SIZE (dotnet-dev-noplat-noarch.1.0.0-preview5-004226.tar.xz) = 28907148
+SHA256 (dotnet-dev-freebsd-noarch.1.0.0-preview5-004226.tar.xz) = 1a6c301755f968967a99f453a346293d527812c63f3763ea43a5e472f090275d
+SIZE (dotnet-dev-freebsd-noarch.1.0.0-preview5-004226.tar.xz) = 737644
