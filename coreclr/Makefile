@@ -13,7 +13,7 @@ LICENSE_FILE=	${WRKSRC}/LICENSE.TXT
 
 LIB_DEPENDS=	libunwind.so.8:devel/libunwind \
 		libicuuc.so:devel/icu \
-		liblldb.so.${LLVM_VERSION}:devel/llvm${LLVM_VERSION:S/.//}
+		liblldb.so.${LLVM_VERSION}.1:devel/llvm${LLVM_VER}
 
 ONLY_FOR_ARCHS=	i386 amd64 armv6
 
